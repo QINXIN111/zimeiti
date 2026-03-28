@@ -14,12 +14,5 @@
 主题：{topic}
 平台：{platform}
 
-请按以下JSON格式输出：
-```json
-{
-  "title": "标题",
-  "content": "正文内容",
-  "tags": ["标签1", "标签2", "标签3"],
-  "image_prompt": "配图描述（英文）"
-}
-```
+请按以下JSON格式输出（注意：用标准JSON格式）：
+{{"title": "标题", "content": "正文内容", "tags": ["标签1", "标签2", "标签3"], "image_prompt": "配图描述（英文）"}}

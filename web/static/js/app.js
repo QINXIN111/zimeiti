@@ -346,3 +346,143 @@ async function saveSettings() {
     addLog('✅ 配置保存成功', 'success');
     closeSettings();
 }
+
+/* ==================== 热点采集 ==================== */
+async function loadHotspots() {
+    const container = document.getElementById('hotspotList');
+    container.innerHTML = '<div class="empty-state">⏳ 加载中...</div>';
+
+    try {
+        const res = await fetch('/api/hotspots');
+        const data = await res.json();
+        const hotspots = data.hotspots || [];
+
+        if (hotspots.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无热点数据</div>';
+            return;
+        }
+
+        const categoryEmojis = {
+            '娱乐': '🎬', '社会': '📰', '科技': '💻', '财经': '💰',
+            '体育': '⚽', '游戏': '🎮', '汽车': '🚗', '美食': '🍜',
+            '旅游': '✈️', '综合': '📌'
+        };
+
+        container.innerHTML = hotspots.slice(0, 15).map((h, i) => `
+            <div class="hotspot-item" onclick="useHotspot('${h.title.replace(/'/g, "\\'")}')">
+                <span class="hotspot-rank">${i + 1}</span>
+                <div class="hotspot-info">
+                    <span class="hotspot-title">${h.title}</span>
+                    <span class="hotspot-meta">${categoryEmojis[h.category] || '📌'} ${h.source} · 🔥${h.heat}</span>
+                </div>
+            </div>
+        `).join('');
+
+        addLog(`🔥 加载 ${hotspots.length} 条热点`, 'success');
+    } catch (e) {
+        container.innerHTML = '<div class="empty-state">加载失败</div>';
+        addLog(`❌ 热点加载失败: ${e.message}`, 'error');
+    }
+}
+
+function useHotspot(title) {
+    document.getElementById('topicInput').value = title;
+    addLog(`📌 已填入热点: ${title}`, 'info');
+    document.getElementById('topicInput').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ==================== 文章复刻 ==================== */
+async function cloneArticle() {
+    const url = document.getElementById('cloneUrl').value.trim();
+    const resultDiv = document.getElementById('cloneResult');
+
+    if (!url) {
+        resultDiv.innerHTML = '<span class="log-error">请输入文章链接</span>';
+        return;
+    }
+
+    resultDiv.innerHTML = '<div class="empty-state">⏳ 抓取分析中...</div>';
+    addLog('🔗 开始抓取文章...', 'info');
+
+    try {
+        const res = await fetch('/api/clone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            resultDiv.innerHTML = `<span class="log-error">${data.error}</span>`;
+            return;
+        }
+
+        const article = data.article;
+        const style = data.style;
+
+        resultDiv.innerHTML = `
+            <div class="clone-result-card">
+                <h4>${article.title}</h4>
+                <p class="hint">${article.platform} · ${article.author || '未知作者'}</p>
+                <div class="style-tags">
+                    <span class="tag">标题: ${style.title_style}</span>
+                    <span class="tag">语气: ${style.tone}</span>
+                    <span class="tag">结构: ${style.structure}</span>
+                    ${style.has_emoji ? '<span class="tag">含Emoji</span>' : ''}
+                    ${style.has_hashtags ? '<span class="tag">含标签</span>' : ''}
+                </div>
+                <p class="hint" style="margin-top: 8px;">${article.content.substring(0, 200)}...</p>
+                <button class="btn btn-primary" style="margin-top: 12px;" onclick="generateFromClone()">
+                    ✨ 基于此风格生成新内容
+                </button>
+            </div>
+        `;
+
+        // 存储复刻数据供后续使用
+        window._clonedArticle = article;
+        window._clonedStyle = style;
+
+        addLog('✅ 文章分析完成', 'success');
+    } catch (e) {
+        resultDiv.innerHTML = `<span class="log-error">抓取失败: ${e.message}</span>`;
+        addLog(`❌ 抓取失败: ${e.message}`, 'error');
+    }
+}
+
+async function generateFromClone() {
+    if (!window._clonedArticle) return;
+
+    const platforms = [];
+    document.querySelectorAll('.platform-tag input:checked').forEach(cb => {
+        platforms.push(cb.value);
+    });
+
+    addLog('✨ 基于复刻风格生成中...', 'info');
+
+    try {
+        const res = await fetch('/api/clone/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                article: window._clonedArticle,
+                style: window._clonedStyle,
+                count: 3,
+                platforms,
+            }),
+        });
+        const data = await res.json();
+
+        if (data.results) {
+            for (const [platform, article] of Object.entries(data.results)) {
+                addLog(`✅ [${platform}] ${article.title}`, 'success');
+            }
+            // 填入第一个平台的内容到主题框
+            const firstPlatform = platforms[0];
+            if (data.results[firstPlatform]) {
+                document.getElementById('topicInput').value = data.results[firstPlatform].title;
+            }
+        }
+    } catch (e) {
+        addLog(`❌ 生成失败: ${e.message}`, 'error');
+    }
+}

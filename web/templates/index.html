@@ -63,6 +63,28 @@
                     </div>
                 </div>
 
+                <!-- 🔥 热点榜 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🔥 实时热点</h2>
+                        <button class="btn btn-sm" onclick="loadHotspots()">🔄 刷新</button>
+                    </div>
+                    <div id="hotspotList" class="hotspot-list">
+                        <div class="empty-state">点击刷新加载热点</div>
+                    </div>
+                </div>
+
+                <!-- 🔗 文章复刻 -->
+                <div class="card">
+                    <h2>🔗 文章复刻</h2>
+                    <p class="hint">粘贴文章链接，AI 自动分析风格并生成同类内容</p>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <input type="text" id="cloneUrl" placeholder="粘贴小红书/公众号/抖音文章链接..." class="form-input">
+                    </div>
+                    <button class="btn btn-secondary" onclick="cloneArticle()" style="margin-top: 8px;">📋 抓取分析</button>
+                    <div id="cloneResult" style="margin-top: 12px;"></div>
+                </div>
+
                 <!-- 实时日志 -->
                 <div class="card">
                     <h2>📋 执行日志</h2>

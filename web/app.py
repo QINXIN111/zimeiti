@@ -282,6 +282,72 @@ async def api_drafts():
     return drafts[:20]
 
 
+# ==================== 热点采集 ====================
+
+@app.get("/api/hotspots")
+async def api_hotspots(sources: str = "weibo,zhihu,baidu"):
+    """获取实时热点列表"""
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+    from collectors.hotspots import HotspotCollector
+
+    collector = HotspotCollector()
+    source_list = sources.split(",")
+    hotspots = await asyncio.to_thread(collector.collect_all, source_list)
+    return {"hotspots": hotspots[:30], "updated_at": datetime.now().isoformat()}
+
+
+# ==================== 文章复刻 ====================
+
+@app.post("/api/clone")
+async def api_clone_article(request: Request):
+    """抓取文章并分析风格"""
+    body = await request.json()
+    url = body.get("url", "").strip()
+
+    if not url:
+        return JSONResponse({"error": "请提供文章链接"}, status_code=400)
+
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+    from collectors.article import ArticleCloner
+
+    cloner = ArticleCloner()
+    article = await asyncio.to_thread(cloner.fetch_article, url)
+    style = await asyncio.to_thread(cloner.analyze_style, article)
+
+    return {
+        "article": article,
+        "style": style,
+    }
+
+
+@app.post("/api/clone/generate")
+async def api_clone_generate(request: Request):
+    """基于复刻的文章风格生成新内容"""
+    body = await request.json()
+    article = body.get("article", {})
+    style = body.get("style", {})
+    count = body.get("count", 3)
+    platforms = body.get("platforms", ["xiaohongshu"])
+
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+    from generators.article import ArticleGenerator
+
+    config = load_config()
+    gen = ArticleGenerator(config)
+
+    # 构建风格描述
+    style_desc = f"标题风格: {style.get('title_style', '陈述式')}, 语气: {style.get('tone', '中性')}, 结构: {style.get('structure', '自由格式')}"
+
+    # 基于原文主题生成新内容
+    topic = f"参考这篇内容风格（{style_desc}），主题类似但内容不同：{article.get('title', '')}"
+    results = await asyncio.to_thread(gen.generate_batch, topic, platforms)
+
+    return {"results": results}
+
+
 # ==================== 任务执行 ====================
 
 async def run_task(task_id: str, topic: str, platforms: list, auto: bool):
