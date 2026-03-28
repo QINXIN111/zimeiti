@@ -39,9 +39,9 @@ class HotspotCollector:
                 try:
                     hotspots = fn()
                     all_hotspots.extend(hotspots)
-                    print(f"[热点] ✅ {source}: {len(hotspots)} 条")
+                    print(f"[热点] OK {source}: {len(hotspots)} 条")
                 except Exception as e:
-                    print(f"[热点] ❌ {source}: {e}")
+                    print(f"[热点] FAIL {source}: {e}")
 
         # 去重 + 排序
         seen = set()
