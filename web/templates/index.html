@@ -183,97 +183,345 @@
 
         <!-- ==================== 页面3：系统设置 ==================== -->
         <main class="page" id="page-settings">
-            <div class="settings-grid">
-                <!-- AI 大模型配置 -->
-                <div class="card">
-                    <h2>🤖 AI 大模型配置</h2>
-                    <div class="form-group">
-                        <label>AI 服务商</label>
-                        <select id="aiProvider" class="form-input">
-                            <option value="openai">OpenAI (GPT)</option>
-                            <option value="claude">Anthropic (Claude)</option>
-                            <option value="qwen">通义千问</option>
-                            <option value="glm">智谱 (GLM)</option>
-                            <option value="deepseek">DeepSeek</option>
-                            <option value="custom">自定义</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>API Key</label>
-                        <input type="password" id="aiApiKey" class="form-input" placeholder="sk-...">
-                    </div>
-                    <div class="form-group">
-                        <label>API Base URL</label>
-                        <input type="text" id="aiBaseUrl" class="form-input" placeholder="https://api.openai.com/v1">
-                    </div>
-                    <div class="form-group">
-                        <label>模型名称</label>
-                        <input type="text" id="aiModel" class="form-input" placeholder="gpt-4o">
-                    </div>
-                    <div class="form-group">
-                        <label>Temperature</label>
-                        <input type="range" id="aiTemp" min="0" max="2" step="0.1" value="0.7">
-                        <span id="aiTempVal">0.7</span>
-                    </div>
-                </div>
+            <div class="settings-layout">
+                <!-- 左侧导航 -->
+                <nav class="settings-nav">
+                    <button class="settings-nav-btn active" onclick="switchSettingsTab('ai')">🤖 AI 模型</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('platform')">📱 平台管理</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('schedule')">⏰ 定时发布</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('accounts')">👥 多账号</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('content')">📝 内容偏好</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('strategy')">📋 发布策略</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('image')">🎨 图片生成</button>
+                </nav>
 
-                <!-- 图片生成配置 -->
-                <div class="card">
-                    <h2>🎨 图片生成配置</h2>
-                    <div class="form-group">
-                        <label>图片生成服务</label>
-                        <select id="imgProvider" class="form-input">
-                            <option value="dall-e">DALL·E</option>
-                            <option value="sd">Stable Diffusion</option>
-                            <option value="flux">Flux</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>API Key</label>
-                        <input type="password" id="imgApiKey" class="form-input" placeholder="sk-...">
-                    </div>
-                    <div class="form-group">
-                        <label>API Base URL</label>
-                        <input type="text" id="imgBaseUrl" class="form-input" placeholder="https://api.openai.com/v1">
-                    </div>
-                    <div class="form-group">
-                        <label>图片尺寸</label>
-                        <select id="imgSize" class="form-input">
-                            <option value="1024x1024">1024×1024 (正方形)</option>
-                            <option value="1024x1792">1024×1792 (竖版)</option>
-                            <option value="1792x1024">1792×1024 (横版)</option>
-                        </select>
-                    </div>
-                    <div style="margin-top: 16px;">
-                        <button class="btn btn-secondary" onclick="testConnection()">🔌 测试连接</button>
-                    </div>
-                </div>
+                <!-- 右侧内容区 -->
+                <div class="settings-content">
 
-                <!-- 平台管理 -->
-                <div class="card">
-                    <h2>📱 平台管理</h2>
-                    <div id="platformSettings"></div>
-                </div>
+                    <!-- AI 模型配置 -->
+                    <div class="settings-panel active" id="panel-ai">
+                        <h2>🤖 AI 大模型配置</h2>
+                        <div class="form-group">
+                            <label>AI 服务商</label>
+                            <select id="aiProvider" class="form-input">
+                                <option value="openai">OpenAI (GPT)</option>
+                                <option value="claude">Anthropic (Claude)</option>
+                                <option value="qwen">通义千问</option>
+                                <option value="glm">智谱 (GLM)</option>
+                                <option value="deepseek">DeepSeek</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key <span class="hint">（留空则保持当前值）</span></label>
+                            <input type="password" id="aiApiKey" class="form-input" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label>API Base URL</label>
+                            <input type="text" id="aiBaseUrl" class="form-input" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>模型名称</label>
+                            <input type="text" id="aiModel" class="form-input" placeholder="gpt-4o">
+                        </div>
+                        <div class="form-group">
+                            <label>Temperature（创意度）: <span id="aiTempVal">0.7</span></label>
+                            <input type="range" id="aiTemp" min="0" max="2" step="0.1" value="0.7">
+                            <div class="range-labels"><span>精确 0</span><span>平衡 1</span><span>创意 2</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label>每次消耗预估</label>
+                            <div class="cost-hint">每次生成约 2000 tokens，约 $0.01-0.03（取决于模型）</div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-secondary" onclick="testConnection()">🔌 测试连接</button>
+                            <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+                        </div>
+                    </div>
 
-                <!-- 发布策略 -->
-                <div class="card">
-                    <h2>📋 发布策略</h2>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="reviewBefore"> 发布前人工审核
-                        </label>
+                    <!-- 平台管理 -->
+                    <div class="settings-panel" id="panel-platform">
+                        <h2>📱 平台管理</h2>
+                        <p class="section-desc">管理各平台的登录状态。点击「登录」启动浏览器扫码/授权流程。</p>
+                        <div id="platformSettings" class="platform-list"></div>
+                        <div style="margin-top: 16px;">
+                            <button class="btn btn-secondary" onclick="loadSettings()">🔄 刷新状态</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>每日最大发布数</label>
-                        <input type="number" id="maxDaily" class="form-input" min="1" max="50" value="3">
+
+                    <!-- 定时发布 -->
+                    <div class="settings-panel" id="panel-schedule">
+                        <h2>⏰ 定时发布</h2>
+                        <p class="section-desc">设置自动生成和发布的定时任务。所有参数可自由配置，无硬编码。</p>
+
+                        <div class="schedule-global">
+                            <h3>全局开关</h3>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="scheduleEnabled" checked> 启用定时发布
+                            </label>
+                        </div>
+
+                        <div id="scheduleList" class="schedule-list">
+                            <!-- 动态生成 -->
+                        </div>
+
+                        <div class="schedule-add">
+                            <h3>➕ 添加定时任务</h3>
+                            <div class="form-row">
+                                <div class="form-group" style="flex:1">
+                                    <label>任务名称</label>
+                                    <input type="text" id="newScheduleName" class="form-input" placeholder="早间热点">
+                                </div>
+                                <div class="form-group" style="flex:2">
+                                    <label>生成主题来源</label>
+                                    <select id="newScheduleSource" class="form-input">
+                                        <option value="hotspots">AI 自动从热点选</option>
+                                        <option value="finance">财经新闻</option>
+                                        <option value="tech">科技新闻</option>
+                                        <option value="ai">AI 资讯</option>
+                                        <option value="custom">自定义主题（逗号分隔）</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>执行时间</label>
+                                    <input type="time" id="newScheduleTime" class="form-input" value="08:00">
+                                </div>
+                                <div class="form-group">
+                                    <label>重复</label>
+                                    <select id="newScheduleRepeat" class="form-input">
+                                        <option value="daily">每天</option>
+                                        <option value="workday">工作日</option>
+                                        <option value="weekend">周末</option>
+                                        <option value="mon">每周一</option>
+                                        <option value="wed">每周三</option>
+                                        <option value="fri">每周五</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>目标平台</label>
+                                    <div class="mini-platforms">
+                                        <label class="mini-tag"><input type="checkbox" value="xiaohongshu" checked> 📕</label>
+                                        <label class="mini-tag"><input type="checkbox" value="douyin"> 🎵</label>
+                                        <label class="mini-tag"><input type="checkbox" value="wechat"> 💚</label>
+                                        <label class="mini-tag"><input type="checkbox" value="kuaishou"> 🔥</label>
+                                        <label class="mini-tag"><input type="checkbox" value="bilibili"> 📺</label>
+                                        <label class="mini-tag"><input type="checkbox" value="wechat_video"> 📱</label>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="align-self: flex-end">
+                                    <button class="btn btn-primary" onclick="addSchedule()">添加</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>发布间隔（分钟）</label>
-                        <input type="number" id="intervalMin" class="form-input" min="1" max="1440" value="60">
+
+                    <!-- 多账号管理 -->
+                    <div class="settings-panel" id="panel-accounts">
+                        <h2>👥 多账号管理</h2>
+                        <p class="section-desc">每个平台可绑定多个账号，每个账号可设置独立的内容风格。</p>
+
+                        <div id="accountsList" class="accounts-list">
+                            <!-- 动态生成 -->
+                        </div>
+
+                        <div class="account-add">
+                            <h3>➕ 添加账号</h3>
+                            <div class="form-row">
+                                <div class="form-group" style="flex:1">
+                                    <label>平台</label>
+                                    <select id="newAccountPlatform" class="form-input">
+                                        <option value="xiaohongshu">📕 小红书</option>
+                                        <option value="douyin">🎵 抖音</option>
+                                        <option value="wechat">💚 公众号</option>
+                                        <option value="kuaishou">🔥 快手</option>
+                                        <option value="bilibili">📺 B站</option>
+                                        <option value="wechat_video">📱 视频号</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>账号名称</label>
+                                    <input type="text" id="newAccountName" class="form-input" placeholder="我的小号">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" style="flex:1">
+                                    <label>内容风格</label>
+                                    <select id="newAccountStyle" class="form-input">
+                                        <option value="informative">📚 科普科普</option>
+                                        <option value="entertaining">😄 轻松搞笑</option>
+                                        <option value="professional">💼 专业严肃</option>
+                                        <option value="emotional">💭 情感共鸣</option>
+                                        <option value="trending">🔥 热点吐槽</option>
+                                        <option value="custom">✍️ 自定义</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>每日发布上限</label>
+                                    <input type="number" id="newAccountLimit" class="form-input" value="1" min="1" max="20">
+                                </div>
+                                <div class="form-group" style="align-self: flex-end">
+                                    <button class="btn btn-primary" onclick="addAccount()">添加</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div style="margin-top: 16px;">
-                        <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+
+                    <!-- 内容偏好 -->
+                    <div class="settings-panel" id="panel-content">
+                        <h2>📝 内容偏好</h2>
+                        <p class="section-desc">配置 AI 选题的方向、排除主题、以及生成风格。</p>
+
+                        <div class="form-group">
+                            <label>主题白名单 <span class="hint">（只选这些类别，留空则不限）</span></label>
+                            <div class="tag-input-wrap">
+                                <div id="topicWhitelist" class="tag-list">
+                                    <span class="tag editable">科技 <button onclick="this.parentElement.remove()">×</button></span>
+                                    <span class="tag editable">AI <button onclick="this.parentElement.remove()">×</button></span>
+                                    <span class="tag editable">互联网 <button onclick="this.parentElement.remove()">×</button></span>
+                                </div>
+                                <input type="text" id="topicWhitelistInput" class="tag-input" placeholder="输入类别后回车添加" onkeydown="addTopicTag(event, 'whitelist')">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>主题黑名单 <span class="hint">（跳过这些类别）</span></label>
+                            <div class="tag-input-wrap">
+                                <div id="topicBlacklist" class="tag-list">
+                                    <span class="tag editable">政治 <button onclick="this.parentElement.remove()">×</button></span>
+                                    <span class="tag editable">负面 <button onclick="this.parentElement.remove()">×</button></span>
+                                </div>
+                                <input type="text" id="topicBlacklistInput" class="tag-input" placeholder="输入类别后回车添加" onkeydown="addTopicTag(event, 'blacklist')">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>AI 生成语言风格</label>
+                            <select id="contentTone" class="form-input">
+                                <option value="natural">自然口语（像朋友聊天）</option>
+                                <option value="professional">专业严谨（知识科普）</option>
+                                <option value="humorous">幽默风趣（吐槽玩梗）</option>
+                                <option value="emotional">情感细腻（故事共鸣）</option>
+                                <option value="hotspot">热点快评（观点鲜明）</option>
+                                <option value="custom">自定义 prompt</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group hidden" id="customToneGroup">
+                            <label>自定义风格 prompt</label>
+                            <textarea id="customTone" placeholder="你是一个擅长用比喻讲解复杂概念的科技博主..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>默认字数</label>
+                            <select id="defaultWordCount" class="form-input">
+                                <option value="300">300字（短篇）</option>
+                                <option value="500" selected>500字（标准）</option>
+                                <option value="800">800字（详细）</option>
+                                <option value="1200">1200字（深度）</option>
+                                <option value="2000">2000字（长文）</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+                        </div>
                     </div>
+
+                    <!-- 发布策略 -->
+                    <div class="settings-panel" id="panel-strategy">
+                        <h2>📋 发布策略</h2>
+                        <p class="section-desc">控制发布行为，无硬编码——所有参数都在这里配置。</p>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="reviewBefore" checked> 发布前人工审核
+                            </label>
+                            <p class="hint" style="margin-top:4px">开启后，生成内容会先展示在「内容创作」页面的审核弹窗中</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="autoGenerate"> 自动生成内容
+                            </label>
+                            <p class="hint" style="margin-top:4px">开启后，定时任务到期会自动调用 AI 生成内容</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>每日全局发布上限</label>
+                            <input type="number" id="maxDaily" class="form-input" min="1" max="100" value="5">
+                        </div>
+
+                        <div class="form-group">
+                            <label>内容冷却时间（分钟）</label>
+                            <input type="number" id="intervalMin" class="form-input" min="0" max="1440" value="30">
+                            <p class="hint" style="margin-top:4px">两条内容之间的最小间隔，避免短时间内大量发布</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>失败重试次数</label>
+                            <input type="number" id="retryCount" class="form-input" min="0" max="5" value="2">
+                        </div>
+
+                        <div class="form-group">
+                            <label>内容去重</label>
+                            <select id="dedupMode" class="form-input">
+                                <option value="strict">严格去重（标题相似度 > 80% 跳过）</option>
+                                <option value="loose">宽松去重（标题相似度 > 60% 跳过）</option>
+                                <option value="off">关闭去重</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+                        </div>
+                    </div>
+
+                    <!-- 图片生成 -->
+                    <div class="settings-panel" id="panel-image">
+                        <h2>🎨 图片生成配置</h2>
+                        <div class="form-group">
+                            <label>图片生成服务</label>
+                            <select id="imgProvider" class="form-input">
+                                <option value="dall-e">DALL·E</option>
+                                <option value="sd">Stable Diffusion</option>
+                                <option value="flux">Flux</option>
+                                <option value="none">不用配图</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key <span class="hint">（留空则保持当前值）</span></label>
+                            <input type="password" id="imgApiKey" class="form-input" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label>API Base URL</label>
+                            <input type="text" id="imgBaseUrl" class="form-input" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>图片尺寸</label>
+                            <select id="imgSize" class="form-input">
+                                <option value="1024x1024">1024×1024 (正方形)</option>
+                                <option value="1024x1792">1024×1792 (竖版)</option>
+                                <option value="1792x1024">1792×1024 (横版)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>每篇配图数量</label>
+                            <select id="imgCount" class="form-input">
+                                <option value="1">1张</option>
+                                <option value="2" selected>2张</option>
+                                <option value="3">3张</option>
+                                <option value="4">4张</option>
+                                <option value="6">6张（九宫格）</option>
+                            </select>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button class="btn btn-secondary" onclick="testImageConnection()">🔌 测试连接</button>
+                            <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>

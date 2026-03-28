@@ -143,6 +143,144 @@ function toggleAdvanced() {
     arrow.textContent = panel.classList.contains('hidden') ? '▼' : '▲';
 }
 
+/* ==================== 设置子页面切换 ==================== */
+function switchSettingsTab(tab) {
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    event.target.classList.add('active');
+}
+
+/* ==================== 标签输入 ==================== */
+function addTopicTag(e, list) {
+    if (e.key !== 'Enter') return;
+    const input = e.target;
+    const text = input.value.trim();
+    if (!text) return;
+    const listEl = document.getElementById(`topic${list === 'whitelist' ? 'Whitelist' : 'Blacklist'}`);
+    const tag = document.createElement('span');
+    tag.className = 'tag editable';
+    tag.innerHTML = `${text} <button onclick="this.parentElement.remove()">×</button>`;
+    listEl.appendChild(tag);
+    input.value = '';
+}
+
+function getTagList(id) {
+    const el = document.getElementById(id);
+    if (!el) return [];
+    return Array.from(el.querySelectorAll('.tag')).map(t => t.textContent.replace('×', '').trim());
+}
+
+/* ==================== 定时任务 ==================== */
+function renderSchedules(schedules) {
+    const container = document.getElementById('scheduleList');
+    if (!schedules || schedules.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无定时任务，点击下方添加</div>';
+        return;
+    }
+    const repeatLabels = { daily: '每天', workday: '工作日', weekend: '周末', mon: '周一', wed: '周三', fri: '周五' };
+    container.innerHTML = schedules.map((s, i) => `
+        <div class="schedule-item">
+            <div class="schedule-info">
+                <h4>${s.name}</h4>
+                <p>⏰ ${s.time} · ${repeatLabels[s.repeat] || s.repeat} · 📱 ${(s.platforms || []).join(', ')}</p>
+                <p>来源: ${s.source}</p>
+            </div>
+            <div class="schedule-actions">
+                <label class="switch"><input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSchedule(${i})"><span class="slider"></span></label>
+                <button class="btn btn-sm" onclick="removeSchedule(${i})" style="color:var(--danger)">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addSchedule() {
+    const name = document.getElementById('newScheduleName').value.trim();
+    const source = document.getElementById('newScheduleSource').value;
+    const time = document.getElementById('newScheduleTime').value;
+    const repeat = document.getElementById('newScheduleRepeat').value;
+    const platformChecks = document.querySelectorAll('#panel-schedule .mini-tag input:checked');
+    const platforms = Array.from(platformChecks).map(c => c.value);
+
+    if (!name || !platforms.length) {
+        addLog('⚠️ 请填写名称并选择至少一个平台', 'warning');
+        return;
+    }
+
+    const schedules = window._config?.schedules || [];
+    schedules.push({ name, source, time, repeat, platforms, enabled: true });
+    window._config = window._config || {};
+    window._config.schedules = schedules;
+
+    document.getElementById('newScheduleName').value = '';
+    renderSchedules(schedules);
+    saveSettings();
+}
+
+function toggleSchedule(index) {
+    if (window._config?.schedules?.[index]) {
+        window._config.schedules[index].enabled = !window._config.schedules[index].enabled;
+        saveSettings();
+    }
+}
+
+function removeSchedule(index) {
+    if (window._config?.schedules) {
+        window._config.schedules.splice(index, 1);
+        renderSchedules(window._config.schedules);
+        saveSettings();
+    }
+}
+
+/* ==================== 多账号 ==================== */
+function renderAccounts(accounts) {
+    const container = document.getElementById('accountsList');
+    if (!accounts || accounts.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无账号，点击下方添加</div>';
+        return;
+    }
+    const platformNames = { xiaohongshu: '📕 小红书', douyin: '🎵 抖音', wechat: '💚 公众号', kuaishou: '🔥 快手', bilibili: '📺 B站', wechat_video: '📱 视频号' };
+    const styleNames = { informative: '📚 科普', entertaining: '😄 搞笑', professional: '💼 专业', emotional: '💭 情感', trending: '🔥 吐槽', custom: '✍️ 自定义' };
+    container.innerHTML = accounts.map((a, i) => `
+        <div class="account-item">
+            <div class="account-info">
+                <h4>${platformNames[a.platform] || a.platform} - ${a.name}</h4>
+                <p>风格: ${styleNames[a.style] || a.style} · 每日上限: ${a.daily_limit || 1}条</p>
+            </div>
+            <button class="btn btn-sm" onclick="removeAccount(${i})" style="color:var(--danger)">删除</button>
+        </div>
+    `).join('');
+}
+
+function addAccount() {
+    const platform = document.getElementById('newAccountPlatform').value;
+    const name = document.getElementById('newAccountName').value.trim();
+    const style = document.getElementById('newAccountStyle').value;
+    const dailyLimit = parseInt(document.getElementById('newAccountLimit').value) || 1;
+
+    if (!name) {
+        addLog('⚠️ 请填写账号名称', 'warning');
+        return;
+    }
+
+    const accounts = window._config?.accounts || [];
+    accounts.push({ platform, name, style, daily_limit: dailyLimit });
+    window._config = window._config || {};
+    window._config.accounts = accounts;
+
+    document.getElementById('newAccountName').value = '';
+    renderAccounts(accounts);
+    saveSettings();
+}
+
+function removeAccount(index) {
+    if (window._config?.accounts) {
+        window._config.accounts.splice(index, 1);
+        renderAccounts(window._config.accounts);
+        saveSettings();
+    }
+}
+
 /* ==================== API 调用 ==================== */
 async function loadConfig() {
     const res = await fetch('/api/config');
@@ -160,6 +298,7 @@ async function loadConfig() {
 async function loadSettings() {
     const res = await fetch('/api/config');
     const data = await res.json();
+    window._config = data;
 
     // AI 配置
     const ai = data.ai || {};
@@ -174,6 +313,7 @@ async function loadSettings() {
     document.getElementById('imgProvider').value = img.provider || 'dall-e';
     document.getElementById('imgBaseUrl').value = img.base_url || '';
     document.getElementById('imgSize').value = img.size || '1024x1024';
+    document.getElementById('imgCount').value = img.count || 2;
 
     // 平台配置
     const pContainer = document.getElementById('platformSettings');
@@ -198,8 +338,32 @@ async function loadSettings() {
     // 发布策略
     const pub = data.publish || {};
     document.getElementById('reviewBefore').checked = pub.review_before_publish !== false;
-    document.getElementById('maxDaily').value = pub.max_daily_posts || 3;
-    document.getElementById('intervalMin').value = pub.interval_minutes || 60;
+    document.getElementById('autoGenerate').checked = pub.auto_generate || false;
+    document.getElementById('maxDaily').value = pub.max_daily_posts || 5;
+    document.getElementById('intervalMin').value = pub.interval_minutes || 30;
+    document.getElementById('retryCount').value = pub.retry_count || 2;
+    document.getElementById('dedupMode').value = pub.dedup_mode || 'strict';
+
+    // 定时任务
+    renderSchedules(data.schedules || []);
+
+    // 多账号
+    renderAccounts(data.accounts || []);
+
+    // 内容偏好
+    const content = data.content || {};
+    document.getElementById('contentTone').value = content.tone || 'natural';
+    document.getElementById('defaultWordCount').value = content.word_count || 500;
+
+    // 白名单/黑名单
+    if (content.whitelist) {
+        const wl = document.getElementById('topicWhitelist');
+        wl.innerHTML = content.whitelist.map(t => `<span class="tag editable">${t} <button onclick="this.parentElement.remove()">×</button></span>`).join('');
+    }
+    if (content.blacklist) {
+        const bl = document.getElementById('topicBlacklist');
+        bl.innerHTML = content.blacklist.map(t => `<span class="tag editable">${t} <button onclick="this.parentElement.remove()">×</button></span>`).join('');
+    }
 }
 
 async function saveSettings() {
@@ -216,11 +380,23 @@ async function saveSettings() {
             api_key: document.getElementById('imgApiKey').value,
             base_url: document.getElementById('imgBaseUrl').value,
             size: document.getElementById('imgSize').value,
+            count: parseInt(document.getElementById('imgCount').value) || 2,
         },
         publish: {
             review_before_publish: document.getElementById('reviewBefore').checked,
+            auto_generate: document.getElementById('autoGenerate').checked,
             max_daily_posts: parseInt(document.getElementById('maxDaily').value),
             interval_minutes: parseInt(document.getElementById('intervalMin').value),
+            retry_count: parseInt(document.getElementById('retryCount').value),
+            dedup_mode: document.getElementById('dedupMode').value,
+        },
+        schedules: window._config?.schedules || [],
+        accounts: window._config?.accounts || [],
+        content: {
+            tone: document.getElementById('contentTone').value,
+            word_count: parseInt(document.getElementById('defaultWordCount').value),
+            whitelist: getTagList('topicWhitelist'),
+            blacklist: getTagList('topicBlacklist'),
         },
     };
 
