@@ -83,7 +83,45 @@ async def api_config():
         "platforms": get_platforms_status(config),
         "publish": config.get("publish", {}),
         "ai_provider": config.get("ai", {}).get("provider", "未配置"),
+        "ai": config.get("ai", {}),
+        "image": config.get("image", {}),
     }
+
+
+@app.post("/api/config")
+async def api_config_save(request: Request):
+    """保存配置到 settings.yaml"""
+    body = await request.json()
+    config = load_config()
+
+    # 更新 AI 配置
+    if "ai" in body:
+        config.setdefault("ai", {}).update(body["ai"])
+
+    # 更新图片配置
+    if "image" in body:
+        config.setdefault("image", {}).update(body["image"])
+
+    # 更新发布策略
+    if "publish" in body:
+        config.setdefault("publish", {}).update(body["publish"])
+
+    # 更新平台配置
+    if "platforms" in body:
+        config.setdefault("platforms", {}).update(body["platforms"])
+
+    # 写回文件
+    config_path = ROOT_DIR / "config" / "settings.yaml"
+    os.makedirs(config_path.parent, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+
+    await broadcast({"type": "config_updated", "config": {
+        "platforms": get_platforms_status(config),
+        "ai_provider": config.get("ai", {}).get("provider", "未配置"),
+    }})
+
+    return {"status": "success"}
 
 
 @app.get("/api/tasks")
@@ -171,6 +209,61 @@ async def api_task_cancel(task_id: str):
         tasks[task_id]["status"] = "cancelled"
         await broadcast({"type": "task_update", "task": tasks[task_id]})
     return {"status": "cancelled"}
+
+
+@app.post("/api/platform/{platform}/login")
+async def api_platform_login(platform: str):
+    """触发平台登录流程（启动 Playwright 浏览器）"""
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+
+    platform_map = {
+        "xiaohongshu": ("小红书", "https://www.xiaohongshu.com"),
+        "douyin": ("抖音", "https://www.douyin.com"),
+        "wechat": ("微信公众号", "https://mp.weixin.qq.com"),
+    }
+
+    if platform not in platform_map:
+        return JSONResponse({"error": f"不支持的平台: {platform}"}, status_code=400)
+
+    name, url = platform_map[platform]
+
+    def do_login():
+        from playwright.sync_api import sync_playwright
+
+        pw = sync_playwright().start()
+        browser = pw.chromium.launch(headless=False)  # 非无头模式，让用户扫码
+        context = browser.new_context(viewport={"width": 1280, "height": 720})
+        page = context.new_page()
+
+        # 导航到平台
+        page.goto(url)
+
+        # 等待用户登录（最多 5 分钟）
+        print(f"[{platform}] 等待用户登录...")
+        time.sleep(300)  # 5 分钟超时
+
+        # 保存 cookies
+        cookies = context.cookies()
+        cookies_dir = ROOT_DIR / "config" / "cookies"
+        cookies_dir.mkdir(parents=True, exist_ok=True)
+        cookies_file = cookies_dir / f"{platform}.json"
+
+        with open(cookies_file, "w", encoding="utf-8") as f:
+            json.dump(cookies, f, indent=2, ensure_ascii=False)
+
+        print(f"[{platform}] 登录成功，cookies 已保存")
+
+        browser.close()
+        pw.stop()
+
+        return True
+
+    # 在线程池中执行同步的 Playwright
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(_executor, do_login)
+
+    return {"status": "started", "message": f"正在启动浏览器登录 {name}，请扫码..."}
 
 
 @app.get("/api/drafts")

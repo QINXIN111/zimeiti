@@ -1,5 +1,6 @@
 /* ==================== 全局状态 ==================== */
 let currentTaskId = null;
+let currentConfig = {};
 let ws = null;
 
 /* ==================== 初始化 ==================== */
@@ -23,6 +24,10 @@ function connectWebSocket() {
             case 'task_update':
                 handleTaskUpdate(msg.task);
                 break;
+            case 'config_updated':
+                loadConfig();
+                addLog('✅ 配置已更新', 'success');
+                break;
         }
     };
 
@@ -35,8 +40,9 @@ function connectWebSocket() {
 async function loadConfig() {
     const res = await fetch('/api/config');
     const config = await res.json();
+    currentConfig = config;
 
-    // 更新平台状态
+    // 更新平台状态（顶部）
     const container = document.getElementById('platformStatus');
     container.innerHTML = '';
     for (const [name, info] of Object.entries(config.platforms)) {
@@ -44,6 +50,33 @@ async function loadConfig() {
         const cls = info.logged_in ? 'logged-in' : 'not-logged';
         const text = info.logged_in ? '已登录' : '未登录';
         container.innerHTML += `<span class="platform-badge ${cls}">${names[name] || name} · ${text}</span>`;
+    }
+
+    // 更新设置面板中的平台状态
+    if (config.platforms) {
+        for (const [name, info] of Object.entries(config.platforms)) {
+            const statusEl = document.getElementById(`platform-${name}-status`);
+            if (statusEl) {
+                statusEl.textContent = info.logged_in ? '✅ 已登录' : '❌ 未登录';
+                statusEl.className = `platform-login-status ${info.logged_in ? 'logged' : 'not-logged'}`;
+            }
+        }
+    }
+
+    // 填充 AI 配置
+    if (config.ai) {
+        document.getElementById('aiProvider').value = config.ai.provider || 'openai';
+        document.getElementById('aiApiKey').value = config.ai.api_key || '';
+        document.getElementById('aiBaseUrl').value = config.ai.base_url || '';
+        document.getElementById('aiModel').value = config.ai.model || '';
+        document.getElementById('aiTemperature').value = config.ai.temperature || 0.7;
+    }
+
+    // 填充发布策略
+    if (config.publish) {
+        document.getElementById('reviewBeforePublish').checked = config.publish.review_before_publish !== false;
+        document.getElementById('maxDailyPosts').value = config.publish.max_daily_posts || 3;
+        document.getElementById('intervalMinutes').value = config.publish.interval_minutes || 60;
     }
 }
 
@@ -235,4 +268,81 @@ function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+/* ==================== 设置面板 ==================== */
+function openSettings() {
+    document.getElementById('settingsModal').classList.remove('hidden');
+    loadConfig();
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.add('hidden');
+}
+
+function switchTab(tabName) {
+    // 切换标签按钮样式
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+
+    // 切换内容显示
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+    });
+}
+
+async function loginPlatform(platform) {
+    addLog(`🔐 正在启动浏览器登录 ${platform}...`, 'info');
+
+    const res = await fetch(`/api/platform/${platform}/login`, {
+        method: 'POST',
+    });
+
+    const data = await res.json();
+    if (data.error) {
+        addLog(`❌ ${data.error}`, 'error');
+        return;
+    }
+
+    addLog(data.message, 'success');
+
+    // 3秒后刷新平台状态
+    setTimeout(() => {
+        loadConfig();
+    }, 3000);
+}
+
+async function saveSettings() {
+    const config = {
+        ai: {
+            provider: document.getElementById('aiProvider').value,
+            api_key: document.getElementById('aiApiKey').value,
+            base_url: document.getElementById('aiBaseUrl').value,
+            model: document.getElementById('aiModel').value,
+            temperature: parseFloat(document.getElementById('aiTemperature').value),
+        },
+        publish: {
+            review_before_publish: document.getElementById('reviewBeforePublish').checked,
+            max_daily_posts: parseInt(document.getElementById('maxDailyPosts').value),
+            interval_minutes: parseInt(document.getElementById('intervalMinutes').value),
+        },
+    };
+
+    addLog('💾 正在保存配置...', 'info');
+
+    const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+    });
+
+    const data = await res.json();
+    if (data.error) {
+        addLog(`❌ ${data.error}`, 'error');
+        return;
+    }
+
+    addLog('✅ 配置保存成功', 'success');
+    closeSettings();
 }

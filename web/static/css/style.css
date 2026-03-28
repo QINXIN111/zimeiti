@@ -68,6 +68,19 @@ body {
 .platform-badge.logged-in { border-color: var(--success); color: var(--success); }
 .platform-badge.not-logged { border-color: var(--warning); color: var(--warning); }
 
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 12px;
+    transition: color 0.2s;
+}
+
+.icon-btn:hover { color: var(--text); }
+
 /* ==================== 主布局 ==================== */
 .main {
     flex: 1;
@@ -402,4 +415,104 @@ textarea:focus {
     .main {
         grid-template-columns: 1fr;
     }
+}
+
+/* ==================== 设置面板 ==================== */
+.settings-modal {
+    max-width: 700px;
+    max-height: 85vh;
+}
+
+.settings-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--primary); }
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+}
+
+.settings-body {
+    padding: 24px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.form-input[type="password"] {
+    font-family: monospace;
+}
+
+/* 平台账号卡片 */
+.platform-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.platform-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.platform-login-status {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.platform-login-status.logged {
+    color: var(--success);
+}
+
+.platform-login-status.not-logged {
+    color: var(--warning);
 }

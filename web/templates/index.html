@@ -15,6 +15,7 @@
                 <span class="subtitle">AI 写作 · 多平台分发</span>
             </div>
             <div class="header-right">
+                <button class="icon-btn" onclick="openSettings()">⚙️ 设置</button>
                 <div id="platformStatus" class="platform-status"></div>
             </div>
         </header>
@@ -85,6 +86,92 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="closeModal()">取消</button>
                     <button class="btn btn-primary" onclick="approvePublish()">✅ 确认发布</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置弹窗 -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-overlay" onclick="closeSettings()"></div>
+            <div class="modal-content settings-modal">
+                <div class="modal-header">
+                    <h2>⚙️ 系统设置</h2>
+                    <button class="close-btn" onclick="closeSettings()">✕</button>
+                </div>
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="ai" onclick="switchTab('ai')">AI 配置</button>
+                    <button class="tab-btn" data-tab="platform" onclick="switchTab('platform')">平台账号</button>
+                    <button class="tab-btn" data-tab="publish" onclick="switchTab('publish')">发布策略</button>
+                </div>
+                <div class="modal-body settings-body">
+                    <!-- AI 配置 -->
+                    <div id="tab-ai" class="tab-content active">
+                        <div class="form-group">
+                            <label>AI 提供商</label>
+                            <select id="aiProvider" class="form-input">
+                                <option value="openai">OpenAI</option>
+                                <option value="deepseek">DeepSeek</option>
+                                <option value="qwen">通义千问 (Qwen)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="password" id="aiApiKey" class="form-input" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label>Base URL</label>
+                            <input type="text" id="aiBaseUrl" class="form-input" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>Model</label>
+                            <input type="text" id="aiModel" class="form-input" placeholder="gpt-4o">
+                        </div>
+                        <div class="form-group">
+                            <label>Temperature</label>
+                            <input type="number" id="aiTemperature" class="form-input" min="0" max="2" step="0.1" value="0.7">
+                        </div>
+                    </div>
+
+                    <!-- 平台账号 -->
+                    <div id="tab-platform" class="tab-content">
+                        <div class="platform-card">
+                            <h3>📕 小红书</h3>
+                            <div id="platform-xiaohongshu-status" class="platform-login-status">未登录</div>
+                            <button class="btn btn-primary" onclick="loginPlatform('xiaohongshu')">🔐 扫码登录</button>
+                        </div>
+                        <div class="platform-card">
+                            <h3>🎵 抖音</h3>
+                            <div id="platform-douyin-status" class="platform-login-status">未登录</div>
+                            <button class="btn btn-primary" onclick="loginPlatform('douyin')">🔐 扫码登录</button>
+                        </div>
+                        <div class="platform-card">
+                            <h3>💚 微信公众号</h3>
+                            <div id="platform-wechat-status" class="platform-login-status">未登录</div>
+                            <button class="btn btn-primary" onclick="loginPlatform('wechat')">🔐 扫码登录</button>
+                        </div>
+                    </div>
+
+                    <!-- 发布策略 -->
+                    <div id="tab-publish" class="tab-content">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="reviewBeforePublish" checked>
+                                发布前人工审核
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>每日最大发布数</label>
+                            <input type="number" id="maxDailyPosts" class="form-input" min="1" max="50" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label>发布间隔（分钟）</label>
+                            <input type="number" id="intervalMinutes" class="form-input" min="1" max="1440" value="60">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeSettings()">取消</button>
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 保存配置</button>
                 </div>
             </div>
         </div>
