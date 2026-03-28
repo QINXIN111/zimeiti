@@ -147,6 +147,9 @@
                             <label class="auto-toggle">
                                 <input type="checkbox" id="autoPublish"> 跳过审核直接发布
                             </label>
+                            <label class="auto-toggle">
+                                <input type="checkbox" id="checkKeywords" checked> ✅ 发布前检测违禁词
+                            </label>
                         </div>
                     </div>
 
@@ -192,6 +195,7 @@
                     <button class="settings-nav-btn" onclick="switchSettingsTab('accounts')">👥 多账号</button>
                     <button class="settings-nav-btn" onclick="switchSettingsTab('content')">📝 内容偏好</button>
                     <button class="settings-nav-btn" onclick="switchSettingsTab('strategy')">📋 发布策略</button>
+                    <button class="settings-nav-btn" onclick="switchSettingsTab('keywords')">🚫 违禁词</button>
                     <button class="settings-nav-btn" onclick="switchSettingsTab('image')">🎨 图片生成</button>
                 </nav>
 
@@ -475,6 +479,62 @@
 
                         <div style="margin-top: 16px;">
                             <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+                        </div>
+                    </div>
+
+                    <!-- 违禁词管理 -->
+                    <div class="settings-panel" id="panel-keywords">
+                        <h2>🚫 违禁词管理</h2>
+                        <p class="section-desc">配置各平台的违禁词库，发布前自动检测，避免内容被删。</p>
+
+                        <div class="keyword-test">
+                            <h3>📝 实时检测</h3>
+                            <div class="form-group">
+                                <textarea id="keywordTestText" placeholder="粘贴你生成的内容到这里，点击检测查看结果..." style="min-height:100px"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>检测平台</label>
+                                <div class="mini-platforms">
+                                    <label class="mini-tag"><input type="checkbox" value="xiaohongshu" checked> 📕</label>
+                                    <label class="mini-tag"><input type="checkbox" value="douyin" checked> 🎵</label>
+                                    <label class="mini-tag"><input type="checkbox" value="wechat" checked> 💚</label>
+                                    <label class="mini-tag"><input type="checkbox" value="kuaishou"> 🔥</label>
+                                    <label class="mini-tag"><input type="checkbox" value="bilibili"> 📺</label>
+                                    <label class="mini-tag"><input type="checkbox" value="wechat_video"> 📱</label>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="checkKeywords()">🔍 开始检测</button>
+                            <div id="keywordResult" style="margin-top: 12px;"></div>
+                        </div>
+
+                        <div class="keyword-lists" style="margin-top: 20px;">
+                            <h3>📚 平台违禁词库</h3>
+                            <div id="keywordLibraries"></div>
+                        </div>
+
+                        <div class="custom-keywords" style="margin-top: 20px;">
+                            <h3>➕ 自定义违禁词</h3>
+                            <div class="form-group">
+                                <label>平台</label>
+                                <select id="customKeywordPlatform" class="form-input">
+                                    <option value="common">通用</option>
+                                    <option value="xiaohongshu">📕 小红书</option>
+                                    <option value="douyin">🎵 抖音</option>
+                                    <option value="wechat">💚 公众号</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>风险等级</label>
+                                <select id="customKeywordRisk" class="form-input">
+                                    <option value="high_risk">高风险（完全禁用）</option>
+                                    <option value="medium_risk">中风险（建议避免）</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>添加违禁词（每行一个）</label>
+                                <textarea id="customKeywordInput" placeholder="违禁词1&#10;违禁词2&#10;违禁词3" style="min-height:80px"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveCustomKeywords()">💾 保存自定义词库</button>
                         </div>
                     </div>
 

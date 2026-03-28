@@ -483,6 +483,65 @@ async def publish_task(task_id: str):
         await broadcast({"type": "task_update", "task": task})
 
 
+# ==================== 违禁词检测 ====================
+
+@app.post("/api/check-keywords")
+async def api_check_keywords(request: Request):
+    """检测文本违禁词"""
+    body = await request.json()
+    text = body.get("text", "")
+    platforms = body.get("platforms", None)
+
+    if not text:
+        return JSONResponse({"error": "请提供文本内容"}, status_code=400)
+
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+    from utils.keyword_checker import KeywordChecker, get_replacements
+
+    config = load_config()
+    custom_words = config.get("keywords", {}).get("custom", {})
+    checker = KeywordChecker(custom_words)
+    result = checker.check(text, platforms)
+
+    # 添加推荐替代词
+    for issue in result["issues"]:
+        issue["replacements"] = get_replacements(issue["word"])
+
+    return result
+
+
+@app.get("/api/keywords")
+async def api_get_keywords(platform: str = None):
+    """获取违禁词列表"""
+    import sys
+    sys.path.insert(0, str(ROOT_DIR))
+    from utils.keyword_checker import KeywordChecker, PLATFORM_KEYWORDS
+
+    config = load_config()
+    custom_words = config.get("keywords", {}).get("custom", {})
+    checker = KeywordChecker(custom_words)
+
+    if platform:
+        return checker.get_platform_keywords(platform)
+    return PLATFORM_KEYWORDS
+
+
+@app.post("/api/keywords/custom")
+async def api_save_custom_keywords(request: Request):
+    """保存自定义违禁词"""
+    body = await request.json()
+    config = load_config()
+    config.setdefault("keywords", {})["custom"] = body.get("words", {})
+
+    config_path = ROOT_DIR / "config" / "settings.yaml"
+    os.makedirs(config_path.parent, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+
+    return {"status": "success"}
+
+
 # ==================== WebSocket ====================
 
 @app.websocket("/ws")

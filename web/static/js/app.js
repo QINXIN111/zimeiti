@@ -28,6 +28,7 @@ function switchPage(page) {
     // 切换到设置时加载配置
     if (page === 'settings') {
         loadSettings();
+        loadKeywordLibraries();
     }
     // 切换到热点时加载热点
     if (page === 'hotspot') {
@@ -281,6 +282,141 @@ function removeAccount(index) {
     }
 }
 
+/* ==================== 违禁词检测 ==================== */
+async function checkKeywords() {
+    const text = document.getElementById('keywordTestText').value.trim();
+    const platformChecks = document.querySelectorAll('#panel-keywords .mini-tag input:checked');
+    const platforms = Array.from(platformChecks).map(c => c.value);
+    const resultDiv = document.getElementById('keywordResult');
+
+    if (!text) {
+        resultDiv.innerHTML = '<span style="color:var(--warning)">请先粘贴内容</span>';
+        return;
+    }
+
+    resultDiv.innerHTML = '<div class="empty-state">🔍 检测中...</div>';
+
+    try {
+        const res = await fetch('/api/check-keywords', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, platforms }),
+        });
+        const data = await res.json();
+
+        const riskColors = { safe: 'var(--success)', low: 'var(--primary)', medium: 'var(--warning)', high: 'var(--danger)' };
+        const riskLabels = { safe: '✅ 安全', low: '低风险', medium: '⚠️ 中风险', high: '🚨 高风险' };
+        const riskIcons = { high: '🔴', medium: '🟡', spam: '🟣' };
+
+        let html = `
+            <div class="keyword-result-card" style="border-left: 4px solid ${riskColors[data.risk_level]}">
+                <div class="keyword-result-header">
+                    <span style="font-size:18px;font-weight:700;color:${riskColors[data.risk_level]}">${riskLabels[data.risk_level]}</span>
+                    <span style="font-size:24px;font-weight:700">${data.score}</span>
+                </div>
+                <p style="color:var(--text-muted);font-size:13px;margin:8px 0">${data.summary}</p>
+        `;
+
+        if (data.issues.length > 0) {
+            html += '<div class="keyword-issues">';
+            data.issues.forEach(issue => {
+                const reps = (issue.replacements || []).map(r => `<code>${r}</code>`).join(', ');
+                html += `
+                    <div class="keyword-issue">
+                        <span>${riskIcons[issue.risk] || '⚪'} <strong>${issue.word}</strong></span>
+                        <span class="issue-platform">${issue.platforms.join(', ')}</span>
+                        <span class="issue-replacement">→ 建议替换: ${reps}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        resultDiv.innerHTML = html;
+
+    } catch (e) {
+        resultDiv.innerHTML = `<span style="color:var(--danger)">检测失败: ${e.message}</span>`;
+    }
+}
+
+async function loadKeywordLibraries() {
+    const container = document.getElementById('keywordLibraries');
+    const names = { common: '通用', xiaohongshu: '📕 小红书', douyin: '🎵 抖音', wechat: '💚 公众号' };
+    try {
+        const res = await fetch('/api/keywords');
+        const data = await res.json();
+        let html = '';
+        for (const [platform, words] of Object.entries(data)) {
+            const highCount = (words.high_risk || []).length;
+            const medCount = (words.medium_risk || []).length;
+            html += `
+                <div class="keyword-lib-item">
+                    <strong>${names[platform] || platform}</strong>
+                    <span style="color:var(--text-muted);font-size:12px">🔴 ${highCount} 个高风险 · 🟡 ${medCount} 个中风险</span>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<div class="empty-state">加载失败</div>';
+    }
+}
+
+async function saveCustomKeywords() {
+    const platform = document.getElementById('customKeywordPlatform').value;
+    const risk = document.getElementById('customKeywordRisk').value;
+    const input = document.getElementById('customKeywordInput').value;
+    const words = input.split('\n').map(w => w.trim()).filter(w => w);
+
+    if (!words.length) {
+        addLog('⚠️ 请输入违禁词', 'warning');
+        return;
+    }
+
+    try {
+        await fetch('/api/keywords/custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ words: { [platform]: { [risk]: words } } }),
+        });
+        document.getElementById('customKeywordInput').value = '';
+        addLog(`✅ 已保存 ${words.length} 个自定义违禁词`, 'success');
+        loadKeywordLibraries();
+    } catch (e) {
+        addLog(`❌ 保存失败: ${e.message}`, 'error');
+    }
+}
+
+/* ==================== 审核时自动检测违禁词 ==================== */
+async function autoCheckBeforeReview(task) {
+    if (!document.getElementById('checkKeywords')?.checked) return;
+
+    const platforms = Object.keys(task.articles || {});
+    for (const platform of platforms) {
+        const article = task.articles[platform];
+        if (!article?.content) continue;
+
+        try {
+            const res = await fetch('/api/check-keywords', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: article.title + '\n' + article.content, platforms: [platform] }),
+            });
+            const result = await res.json();
+
+            if (result.risk_level === 'high') {
+                addLog(`🚨 [${platform}] 高风险内容！${result.summary}`, 'error');
+            } else if (result.risk_level === 'medium') {
+                addLog(`⚠️ [${platform}] 检测到风险词: ${result.summary}`, 'warning');
+            }
+            // 把检测结果附加到 task 上
+            if (!task.keyword_check) task.keyword_check = {};
+            task.keyword_check[platform] = result;
+        } catch (e) {}
+    }
+}
+
 /* ==================== API 调用 ==================== */
 async function loadConfig() {
     const res = await fetch('/api/config');
@@ -481,6 +617,19 @@ async function startTask() {
     currentTaskId = data.task_id;
     addLog(`✅ 任务已创建: #${data.task_id}`, 'success');
     loadTasks();
+
+    // 等待 5 秒后检查违禁词
+    if (document.getElementById('checkKeywords')?.checked) {
+        setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/task/${data.task_id}`);
+                const task = await res.json();
+                if (task.articles && Object.keys(task.articles).length > 0) {
+                    await autoCheckBeforeReview(task);
+                }
+            } catch (e) {}
+        }, 5000);
+    }
 }
 
 async function loadTasks() {
@@ -525,13 +674,27 @@ function showReviewModal(task) {
     const modal = document.getElementById('reviewModal');
     const body = document.getElementById('reviewBody');
     const names = { xiaohongshu: '📕 小红书', douyin: '🎵 抖音', wechat: '💚 公众号', kuaishou: '🔥 快手', bilibili: '📺 B站', wechat_video: '📱 视频号' };
+    const riskColors = { safe: 'var(--success)', low: 'var(--primary)', medium: 'var(--warning)', high: 'var(--danger)' };
 
     body.innerHTML = '';
     for (const [platform, article] of Object.entries(task.articles)) {
         const tags = (article.tags || []).map(t => `<span class="tag">#${t}</span>`).join('');
+
+        // 违禁词检测结果
+        const kwCheck = (task.keyword_check || {})[platform];
+        let kwHtml = '';
+        if (kwCheck) {
+            const color = riskColors[kwCheck.risk_level] || 'var(--text-muted)';
+            kwHtml = `<div class="review-kw-check" style="background:rgba(0,0,0,0.2);border-radius:6px;padding:8px 12px;margin-bottom:12px;border-left:3px solid ${color}">
+                <span style="font-weight:600;color:${color}">违禁词检测: ${kwCheck.summary}</span>
+                ${kwCheck.suggestions.length ? '<div style="margin-top:4px;font-size:12px;color:var(--text-muted)">' + kwCheck.suggestions.slice(0, 3).join(' · ') + '</div>' : ''}
+            </div>`;
+        }
+
         body.innerHTML += `
             <div class="review-card" data-platform="${platform}">
                 <h3>${names[platform] || platform}</h3>
+                ${kwHtml}
                 <div class="form-group">
                     <label>标题</label>
                     <input type="text" class="form-input edit-title" value="${article.title || ''}">

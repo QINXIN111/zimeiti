@@ -205,6 +205,18 @@ select { background: var(--bg); border: 1px solid var(--border); border-radius: 
 .account-add { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 16px; }
 .account-add h3 { font-size: 14px; margin-bottom: 12px; }
 
+/* 违禁词检测 */
+.keyword-test { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.keyword-result-card { background: var(--bg); border-radius: 8px; padding: 16px; }
+.keyword-result-header { display: flex; justify-content: space-between; align-items: center; }
+.keyword-issues { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.keyword-issue { display: flex; gap: 12px; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 13px; flex-wrap: wrap; }
+.issue-platform { color: var(--text-muted); font-size: 12px; }
+.issue-replacement { color: var(--primary); font-size: 12px; }
+.issue-replacement code { background: rgba(99,102,241,0.15); padding: 1px 6px; border-radius: 4px; }
+.keyword-lib-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.review-kw-check code { background: rgba(99,102,241,0.15); padding: 1px 6px; border-radius: 4px; }
+
 /* Mini 平台选择 */
 .mini-platforms { display: flex; gap: 6px; }
 .mini-tag {
