@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 自媒体助手</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <h1>🚀 自媒体助手</h1>
+                <span class="subtitle">AI 写作 · 多平台分发</span>
+            </div>
+            <div class="header-right">
+                <div id="platformStatus" class="platform-status"></div>
+            </div>
+        </header>
+
+        <!-- 主内容 -->
+        <main class="main">
+            <!-- 左侧：创作面板 -->
+            <section class="panel">
+                <div class="card">
+                    <h2>📝 新建发布任务</h2>
+                    <div class="form-group">
+                        <label>文章主题</label>
+                        <textarea id="topicInput" placeholder="输入你想写的内容主题，例如：&#10;2024年最值得入手的5款机械键盘推荐"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>目标平台</label>
+                        <div class="platform-selector">
+                            <label class="platform-tag" data-platform="xiaohongshu">
+                                <input type="checkbox" value="xiaohongshu" checked> 📕 小红书
+                            </label>
+                            <label class="platform-tag" data-platform="douyin">
+                                <input type="checkbox" value="douyin" checked> 🎵 抖音
+                            </label>
+                            <label class="platform-tag" data-platform="wechat">
+                                <input type="checkbox" value="wechat" checked> 💚 公众号
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="publishBtn" class="btn btn-primary" onclick="startTask()">
+                            🚀 开始生成
+                        </button>
+                        <label class="auto-toggle">
+                            <input type="checkbox" id="autoPublish"> 跳过审核直接发布
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 实时日志 -->
+                <div class="card">
+                    <h2>📋 执行日志</h2>
+                    <div id="logArea" class="log-area">
+                        <div class="log-item log-info">系统就绪，等待任务...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：任务列表 -->
+            <section class="panel">
+                <div class="card">
+                    <h2>📊 任务历史</h2>
+                    <div id="taskList" class="task-list">
+                        <div class="empty-state">暂无任务</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 审核弹窗 -->
+        <div id="reviewModal" class="modal hidden">
+            <div class="modal-overlay" onclick="closeModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>👀 内容审核</h2>
+                    <button class="close-btn" onclick="closeModal()">✕</button>
+                </div>
+                <div id="reviewBody" class="modal-body"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" onclick="approvePublish()">✅ 确认发布</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

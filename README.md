@@ -39,6 +39,20 @@ python main.py "AI绘画教程" -p xiaohongshu douyin
 python main.py "热点新闻点评" --auto
 ```
 
+## 🖥️ Web 可视化界面
+
+```bash
+python -m web.app
+# 浏览器打开 http://localhost:8888
+```
+
+功能：
+- 📝 输入主题，一键生成多平台内容
+- 👀 审核编辑，发布前可修改标题/正文
+- 📊 任务历史，查看每次发布记录
+- 🔌 实时日志，WebSocket 实时反馈执行状态
+- 🍪 平台登录状态一目了然
+
 ## 📁 项目结构
 
 ```
